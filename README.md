@@ -1,125 +1,114 @@
-# Feature Annexation — Evidence Verification Package
+# Feature Annexation Observatory (FAO)
 
-## What this is
+A Streamlit app for browsing the Feature Annexation evidence corpus, plus the
+verification pipeline scripts that built it. Everything lives in one flat
+directory on purpose -- this repo grew incrementally during the paper's own
+audit process, and the pipeline scripts (`verify_events.py`,
+`verify_investor_claims.py`) and the data they produce (`annexation_evidence.db`)
+need to stay next to each other rather than split across folders, since the
+scripts resolve the database path relative to their own location.
 
-A decontaminated, resumable pipeline to backfill real, citable evidence into the
-Feature Annexation event corpus, replacing self-assigned "Collapse / High Confidence"
-style labels that were checked and found to be unreliable.
+## Repository structure (flat, by design)
 
-## What's in the box
+```
+annexation_evidence.db        -- the full evidence corpus (CC-BY, see LICENSE-DATA)
+providers.py                  -- provider-agnostic LLM dispatch (Anthropic/OpenAI/Gemini/Grok)
+verify_events.py              -- resumable verification pipeline, Event Corpus (50 cases)
+verify_investor_claims.py     -- resumable verification pipeline, Investor Discourse (20 claims)
+app.py                        -- Streamlit app: Browse tab + Admin tab (NEW)
+requirements.txt
+cookbook.md                   -- process notes from building the corpus
+LICENSE                       -- MIT (code)
+LICENSE-DATA                  -- CC-BY (database, evidence corpus, prompts)
+prompts/
+  event_verification_prompt.md       -- canonical prompt used by verify_events.py
+  investor_discourse_prompt.md       -- canonical prompt used by verify_investor_claims.py
+```
 
-- `annexation_evidence.db` — SQLite database, pre-populated with all 50 events from
-  the original corpus's "Platform Absorption Dataset v0.2" (the Core Cases + OS +
-  Search + Enterprise + Media + Commerce layers). This event/offering/platform layer
-  is treated as the trusted superset — it was not found to be hallucinated in the
-  spot checks run so far.
-- `verify_events.py` — the pipeline script. Calls the Anthropic API with the
-  server-side `web_search` tool to verify each event's mechanism and outcome,
-  grades source quality, and writes results back to the DB.
-- `README.md` — this file.
-
-## What was deliberately deleted, and why
-
-Four columns — `category_outcome`, `complementor_status`, `evidence_strength`,
-`confidence` — had their **contents** wiped (schema kept, values set to NULL) before
-packaging. Two independent spot-checks during the audit session found that this
-specific layer of the original corpus was not just unsourced but **actively wrong**:
-
-- WinZip was coded "Collapse" / "Declined" — but WinZip is still sold and updated today.
-- Flashlight apps were coded "Collapse" / "Declined" — but flashlight apps are still
-  actively published, updated, and reviewed today.
-
-Both contradicted by directly checkable, dated, real sources within minutes of
-looking. The pattern suggests these columns were assigned by narrative plausibility
-("platform shipped a feature -> incumbent must have died") rather than by checking
-anything. They are not trustworthy in their current state, and rather than try to
-"fix" them piecemeal, the decision was to null them out entirely and rebuild from
-verified evidence only.
-
-The `cic_score` / `poc_score` / `ic_score` / `af_score` / `pdr_score` columns (from
-the "Platform Absorption Dataset v0.2" framework — Complementor Innovation Cost,
-Platform Observation Cost, etc.) were **not** wiped, because they weren't
-contradicted by evidence in the same way — but be aware they are independently
-weak: every single one of the 50 rows in the source has `poc_score = 1`, with zero
-variance across wildly different platforms and capabilities, which is itself a sign
-these were typed in rather than measured. Treat them as illustrative, not validated,
-until/unless a separate audit pass addresses them specifically.
-
-## How the pipeline works
-
-1. Reads events with `verification_status IN ('unverified', 'failed')`.
-2. For each one, sends a structured prompt to Claude (via the Anthropic API) with
-   the `web_search` tool enabled. The prompt explicitly instructs the model to:
-   - find dated, named, URL-backed sources, not category labels;
-   - check survival/death status as an open question, not an assumption — this is
-     the exact failure mode that produced the WinZip and Flashlight errors;
-   - grade every source's tier (PD/PR/MR/AR/CR/RR/DS) honestly;
-   - flag explicitly when a finding contradicts the "platform shipped competing
-     feature -> complementor died" default narrative.
-3. Parses the JSON response and writes outcome fields + evidence rows + a search
-   log entry back into the DB.
-4. Marks each event `verified`, `contradicted`, `inconclusive`, or `failed` so a
-   second run only retries what didn't finish — safe to interrupt at any point.
-
-## Running it on GitHub Codespaces
+## Running the app
 
 ```bash
-pip install anthropic
-export ANTHROPIC_API_KEY=sk-ant-...
+pip install -r requirements.txt
+streamlit run app.py
+```
 
-# Check current state (no API calls, free):
+Two tabs:
+
+- **Browse Corpus** -- read-only viewer over the 50 events and 20 investor-discourse
+  claims, with the full evidence trail (source, URL, date, supports/contradicts)
+  for every case. This is the retrospective, public-facing view.
+- **Admin: Run Verification** -- a UI over `verify_events.py` and
+  `verify_investor_claims.py`. Lets you pick a provider, a row limit, and run
+  the pipeline directly, with live-streamed log output. This does **not**
+  reimplement the pipeline logic -- it shells out to the same scripts you'd
+  run from the command line, so command-line and Admin-tab runs stay
+  identical and the scripts remain independently runnable and testable.
+
+Why Streamlit rather than the originally-planned static HTML/GitHub-Pages
+page: the Admin tab needs to *execute Python on demand* (run a verification
+pass when a researcher clicks a button), which a static page fundamentally
+cannot do -- there's no server. Streamlit gives a real backend by default
+without standing up a separate Flask layer.
+
+## API keys
+
+The pipeline scripts read provider API keys from environment variables
+(`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`),
+exactly as before. If you deploy this app (e.g. on Streamlit Community Cloud
+or Render, the same way the companion "fluttering sail" app for a different
+paper was deployed), set these via that platform's secrets mechanism --
+`app.py` checks `st.secrets` and copies any keys found there into the
+environment before launching a pipeline run, so either approach works
+locally or deployed.
+
+## Command-line usage (unchanged, still fully supported)
+
+Everything that worked before this app existed still works exactly the same way:
+
+```bash
+python verify_events.py --provider grok --limit 5
 python verify_events.py --status
-
-# Process a small batch first to sanity-check output quality:
-python verify_events.py --limit 5
-
-# Review what came back (see "Reviewing output" below), then continue:
-python verify_events.py --limit 45
-
-# Or just keep running with no --limit until everything is processed;
-# it's safe to Ctrl+C and restart at any point.
-python verify_events.py
+python verify_investor_claims.py --provider anthropic
 ```
 
-## Reviewing output
+The Admin tab is an additional way to trigger these, not a replacement for
+running them directly -- useful if you want to script a larger batch job
+outside the browser, or just prefer the terminal.
 
-After any run, inspect results directly:
+## Forking and re-running verification with a different model
 
-```bash
-sqlite3 annexation_evidence.db "SELECT event_id, platform, offering, category_outcome, confidence, verification_status FROM events;"
+This is the actual point of externalizing the prompts in `prompts/`: if you
+think a result is wrong, you can check, cheaply. Swap `--provider` and
+compare. If your re-run produces a different outcome than ours for the same
+case, that disagreement is itself a useful, citable finding.
 
-sqlite3 annexation_evidence.db "SELECT * FROM events WHERE verification_status='contradicted';"
+## A known limitation, stated up front
 
-sqlite3 annexation_evidence.db "SELECT * FROM evidence WHERE event_id=16;"
-```
+This corpus is **better at confirming that a complementor survived than at
+confirming that one quietly failed without public announcement** (see the
+paper's Appendix A.7.1 and Section 5.7, grounded in Denrell's 2003 work on
+undersampling of organizational failure). The near-absence of clean
+"annexed and did not reposition" cases in this dataset should be read as a
+structural blind spot in retrospective, web-search-based research, not as
+evidence that such cases are rare. Locating and verifying that cohort is
+identified as necessary future work, not completed here.
 
-**Do not treat the model's automated grading as final.** It is the same kind of
-judgment call that got the original corpus's outcome columns wrong in the first
-place — the prompt is designed to reduce that risk (by explicitly requiring evidence
-of survival/death rather than assuming it), but a second human pass over anything
-marked `verified` with `confidence: High` is still warranted before it goes in a
-manuscript, especially for any row whose outcome supports a key claim in the paper
-(e.g. anything cited in §4 or §5 / Platform Utility Paradox).
+## Licensing
 
-## Why Anthropic API + `web_search` tool instead of SerpAPI / Bing / Google CSE
+- Code (`app.py`, `providers.py`, `verify_events.py`, `verify_investor_claims.py`):
+  MIT License (see `LICENSE`).
+- Data (`annexation_evidence.db`, `prompts/`): CC-BY (see `LICENSE-DATA`) --
+  attribution required, otherwise free to use, fork, and extend.
 
-You already have an Anthropic key; this avoids standing up a second vendor
-relationship, a second billing account, and a second API surface to learn. The
-`web_search` tool returns results already attached to a model call that can reason
-about them in the same step (grade source tier, paraphrase, flag contradictions),
-rather than returning raw search-engine JSON that you'd then need a separate model
-call to interpret anyway. There's no capability SerpAPI/Bing/Google CSE would add
-here that matters more than that simplicity, for this specific task.
+## Roadmap (not yet built)
 
-## Known limitations
-
-- This pipeline depends on the model's web search actually finding good sources.
-  For genuinely obscure or very recent cases (e.g. AI-ecosystem rows: LangChain,
-  MCP wrappers, routing frameworks), expect more `inconclusive` results — that's
-  an honest outcome, not a bug.
-- Rate limits: the `--sleep` flag and `--limit` flag exist specifically so you can
-  throttle yourself rather than getting throttled. Start small.
-- The script does not deduplicate or cross-check against the original corpus's A2
-  (Temporal/Telemetry), A3 (Ecosystem Reorganization), A4 (Investor) or A5
-  (Typology) datasets, which contain overlapping but not identically-keyed claims
-  about the same events. That cross-referencing is a separate pass.
+- Predictive scoring is an explicitly deferred, open question -- see the
+  paper's Appendix B.7 before pursuing this; it is future work, not a
+  missing feature of the current app.
+- A second dataset for the related-but-distinct "Extraction Annexation"
+  phenomenon is being developed as a separate research thread and may
+  eventually become a third tab here.
+- Admin-tab authentication / access control: right now anyone who can reach
+  the deployed app can trigger a pipeline run (and spend your API budget).
+  Fine for local/Codespace use; needs a password gate or IP restriction
+  before any public deployment.
