@@ -1,0 +1,111 @@
+# FAO display label map — canonical as of 2026-07-01
+# Field-keyed: labels.get(field, {}).get(raw_value, humanise(raw_value))
+# UI labels diverge deliberately from manuscript academic terms for accessibility.
+# Full correspondence documented in fao_spec.md Section 6.
+
+# ── Fate (Outcome) ────────────────────────────────────────────────────────────
+category_outcome:
+  Repositioning:                    "Pivot to Niche"
+  Contraction:                      "Market Narrowing"
+  Compression:                      "Clickthrough Loss"
+  Transformation:                   "Category Shift"
+  Survived_No_Clear_Reorganization: "Survived Unchanged"
+  Contested_Platform_Retreat:       "Platform Retreated"
+  Insufficient_Evidence:            "Insufficient evidence"
+
+# ── Zone (Domain / Layer) ─────────────────────────────────────────────────────
+layer:
+  "AI Tooling":                       "AI Tooling"
+  "Commerce and Infrastructure Layer":"Commerce & Infrastructure"
+  "Enterprise Software Layer":        "Enterprise Software"
+  "Marketplace / Private Label":      "Marketplace & Private Label"
+  "Media and Attention Layer":        "Media & Attention"
+  "Mobile OS Utilities":              "Mobile OS Utilities"
+  "Operating System Layer":           "Operating System"
+  "Search and Information Layer":     "Search & Information"
+
+# ── FAM Dimension Names ───────────────────────────────────────────────────────
+# Academic term → UI label correspondence:
+# fam_implementation_gap      = Implementation Gap  → Feature Gap Degree
+# fam_replication_feasibility = Replication Feasibility → Ease of Replication
+# fam_telemetry_exposure      = Telemetry Exposure  → Visibility on Platform Radar
+# fam_integration_pressure    = Integration Pressure → Native Fit Friction
+fam_dimensions:
+  fam_implementation_gap:      "Feature Gap Degree"
+  fam_replication_feasibility: "Ease of Replication"
+  fam_telemetry_exposure:      "Visibility on Platform Radar"
+  fam_integration_pressure:    "Native Fit Friction"
+
+# ── FAM Tier Labels ───────────────────────────────────────────────────────────
+# Applied per-dimension based on absolute score (0-100).
+# Describes signal strength, not ranking within a case.
+fam_tiers:
+  mature:     "Mature"      # 75-100
+  developing: "Developing"  # 50-74
+  emerging:   "Emerging"    # 25-49
+  nascent:    "Nascent"     # 0-24
+
+# ── Complementor Status ───────────────────────────────────────────────────────
+complementor_status:
+  Survived: "Survived"
+  Declined: "Declined"
+  Emerging: "Emerging"
+  Unknown:  "Unknown"
+
+# ── Evidence Quality ──────────────────────────────────────────────────────────
+# Measures source quality, not outcome severity.
+confidence:
+  High:   "Good Evidence"
+  Medium: "Medium Evidence"
+  Low:    "Low Evidence"
+
+# ── Verification Status ───────────────────────────────────────────────────────
+# "contradicted" = contradicts the original unaudited corpus assumption of Collapse.
+verification_status:
+  contradicted:       "Contradicts collapse narrative"
+  verified_consistent:"Consistent with collapse narrative"
+  inconclusive:       "Inconclusive"
+  scored:             ""   # internal — suppressed from Browse view
+  unscored:           ""   # internal — suppressed from Browse view
+
+# ── Investor / Market Discourse Claims ────────────────────────────────────────
+investor_verification_status:
+  contradicted: "Discourse claim contradicted"
+  inconclusive: "Discourse claim inconclusive"
+  confirmed:    "Discourse claim confirmed"
+
+investor_funding_impact:
+  Insufficient_Evidence: "No evidence of funding impact found"
+  Low:                   "Low funding impact"
+  Medium:                "Moderate funding impact"
+  High:                  "Significant funding impact"
+
+investor_confidence:
+  High:   "High confidence"
+  Medium: "Medium confidence"
+  Low:    "Low confidence"
+
+# ── Evidence Source Types ─────────────────────────────────────────────────────
+source_type:
+  PD:    "Platform documentation"
+  PR:    "Product documentation"
+  MR:    "Market reporting / press"
+  AR:    "Academic / peer-reviewed"
+  CR:    "Community / forum"
+  RR:    "Regulatory"
+  DS:    "Dataset / statistics"
+  VC:    "Investor / VC commentary"
+  MR/DS: "Market reporting + dataset"
+
+# ── Evidence Stance ───────────────────────────────────────────────────────────
+supports_or_contradicts:
+  supports:    "Supports"
+  contradicts: "Contradicts"
+  partial:     "Partial"
+
+# ── Section / Tab Names ───────────────────────────────────────────────────────
+section_names:
+  event_corpus:       "Annexation Cases"
+  investor_discourse: "Market Discourse"
+  dashboard:          "Dashboard"
+  admin:              "Run Verification"

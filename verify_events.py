@@ -186,6 +186,7 @@ def verify_one_event(client, event_id, platform, offering, annexation_event, ver
 
     return providers.extract_json(full_text)
 
+PROTECTED_OUTCOMES = {'Contested_Platform_Retreat'}
 
 def persist_result(conn, event_id, result):
     """
@@ -219,6 +220,15 @@ def persist_result(conn, event_id, result):
 
     log.debug("  Computed verification_status='%s' from mechanism_verified=%r, contradicts_flag=%r",
               status, mech, contradicts)
+    
+    # Preserve manually-assigned category_outcomes the pipeline cannot derive.
+    existing = c.execute("SELECT category_outcome FROM events WHERE event_id=?", (event_id,)).fetchone()
+    existing_outcome = existing[0] if existing else None
+    if existing_outcome in PROTECTED_OUTCOMES:
+        final_outcome = existing_outcome
+        log.info("  Preserving protected category_outcome=%r for event %d.", existing_outcome, event_id)
+    else:
+        final_outcome = result.get("category_outcome")
 
     c.execute("""UPDATE events SET
                     category_outcome=?, complementor_status=?, evidence_strength=?,
@@ -273,6 +283,15 @@ def print_status(conn):
         print(f"\nConfirmed contradictions of the original 'Collapse'-style narrative ({len(contradictions)}):")
         for row in contradictions:
             print(f"  #{row[0]}: {row[1]} / {row[2]} -> {row[3]}")
+    
+        print("\nOutcome distribution:")
+        outcome_rows = c.execute(
+            "SELECT category_outcome, count(*) FROM events GROUP BY category_outcome ORDER BY count(*) DESC"
+        ).fetchall()
+        for outcome, n in outcome_rows:
+            print(f"  {outcome}: {n}")
+
+
 
 
 def main():
