@@ -904,7 +904,7 @@ with tab_dashboard:
     n_high   = (ev["_conf"]=="High").sum()
     n_mod    = (ev["_conf"]=="Medium").sum()
     n_low    = (ev["_conf"]=="Low").sum()
-    n_contra = (ev["verification_status"]=="contradicted").sum()
+    n_contra = (ev["verification_status"]=="postFA-collapseContradicted").sum()
 
     # ── Primary KPIs ─────────────────────────────────────────────────────────
     st.markdown(f"""

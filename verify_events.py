@@ -3,7 +3,7 @@
 Feature Annexation corpus — evidence verification pipeline.
 
 Run on GitHub Codespaces. Resumable: re-running this script skips events
-already marked 'verified' or 'contradicted', and retries 'unverified' or
+already marked 'verified' or 'postFA-collapseContradicted', and retries 'unverified' or
 'failed' ones. Safe to interrupt (Ctrl+C, Codespace restart, rate limit)
 and resume.
 
@@ -137,7 +137,7 @@ def get_unverified_events(conn, limit=None, specific_id=None):
     Resumability lives entirely in this one query: any event whose
     verification_status is still 'unverified' (never attempted) or 'failed'
     (attempted but errored, e.g. a malformed JSON response or a dropped
-    connection) is fair game to retry. Anything 'verified', 'contradicted',
+    connection) is fair game to retry. Anything 'verified', 'postFA-collapseContradicted',
     or 'inconclusive' is left alone -- those are *results*, not problems to
     retry, even if you personally disagree with the result later (that's a
     job for a human review pass over the evidence table, not for re-running
@@ -194,7 +194,7 @@ def persist_result(conn, event_id, result):
 
     CONTRADICTS_DEFAULT_NARRATIVE BUG NOTE: an earlier version of this function
     computed verification_status as 'verified' whenever mechanism_verified was
-    True, falling back to 'contradicted' only otherwise -- which meant that
+    True, falling back to 'postFA-collapseContradicted' only otherwise -- which meant that
     whenever a case had BOTH mechanism_verified=True AND
     contradicts_typical_collapse_narrative=True (the common case -- confirming
     the mechanism is usually the easy part, and most complementors turned out
@@ -214,7 +214,7 @@ def persist_result(conn, event_id, result):
     if mech is not True:
         status = "inconclusive"
     elif contradicts:
-        status = "contradicted"
+        status = "postFA-collapseContradicted"
     else:
         status = "verified_consistent"  # mechanism confirmed AND outcome matches the original dramatic label
 

@@ -16,7 +16,7 @@ category_outcome:
 # ── Zone (Domain / Layer) ─────────────────────────────────────────────────────
 layer:
   "AI Tooling":                       "AI Tooling"
-  "Commerce and Infrastructure Layer":"Commerce & Infrastructure"
+  "Commerce and Infrastructure Layer": "Commerce & Infrastructure"
   "Enterprise Software Layer":        "Enterprise Software"
   "Marketplace / Private Label":      "Marketplace & Private Label"
   "Media and Attention Layer":        "Media & Attention"
@@ -60,10 +60,10 @@ confidence:
   Low:    "Low Evidence"
 
 # ── Verification Status ───────────────────────────────────────────────────────
-# "contradicted" = contradicts the original unaudited corpus assumption of Collapse.
+# "postFA-collapseContradicted" = contradicts the original unaudited corpus assumption of Collapse.
 verification_status:
-  contradicted:       "Contradicts collapse narrative"
-  verified_consistent:"Consistent with collapse narrative"
+  postFA-collapseContradicted: "Contradicts collapse narrative"
+  verified_consistent: "Consistent with collapse narrative"
   inconclusive:       "Inconclusive"
   scored:             ""   # internal — suppressed from Browse view
   unscored:           ""   # internal — suppressed from Browse view
